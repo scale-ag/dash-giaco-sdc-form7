@@ -309,8 +309,16 @@ function comboChart(id, d){
   });
 }
 /* rótulo longo no eixo (nome de anúncio/resposta do formulário) é abreviado só
-   no EIXO — o tooltip mostra o nome completo. */
-const AXIS_LABEL_MAX=30;
+   no EIXO — o tooltip mostra o nome completo. O Chart.js limita o eixo Y a
+   ~metade da largura do gráfico e CORTA o começo do texto que passa disso;
+   aqui o rótulo é medido e abreviado com "…" para caber nessa metade. */
+function fitAxisLabel(label, maxPx){
+  const font='10px '+((Chart.defaults&&Chart.defaults.font&&Chart.defaults.font.family)||'sans-serif');
+  let s=String(label);
+  if(textWidth(s,font)<=maxPx) return s;
+  while(s.length>1 && textWidth(s+'…',font)>maxPx) s=s.slice(0,-1);
+  return s.trimEnd()+'…';
+}
 function hbar(id, items, valFn, colorFn, top, unit){
   destroy(id); const el=document.getElementById(id); if(!el) return;
   unit=unit||'leads';
@@ -321,7 +329,7 @@ function hbar(id, items, valFn, colorFn, top, unit){
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{right:28}},
       plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>intf(c.raw)+' '+unit}}},
       scales:{x:{beginAtZero:true,ticks:{color:mut,precision:0,font:{size:10}},grid:{color:cgrid()}},
-              y:{ticks:{color:mut,font:{size:10},callback:function(v){ const l=String(this.getLabelForValue(v)); return l.length>AXIS_LABEL_MAX?l.slice(0,AXIS_LABEL_MAX-1)+'…':l; }},grid:{display:false}}}}});
+              y:{ticks:{color:mut,font:{size:10},callback:function(v){ return fitAxisLabel(this.getLabelForValue(v), Math.max(60,(this.chart.width-28)/2-16)); }},grid:{display:false}}}}});
 }
 const barLabels={id:'barLabels',afterDatasetsDraw(ch){const{ctx}=ch;ctx.save();ctx.font='600 11px Segoe UI,system-ui';ctx.fillStyle=cmuted();ctx.textBaseline='middle';
   ch.getDatasetMeta(0).data.forEach((el,i)=>{const v=ch.data.datasets[0].data[i]; if(!v)return; ctx.fillText(intf(v),el.x+5,el.y);});ctx.restore();}};
